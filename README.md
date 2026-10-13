@@ -6,6 +6,13 @@ AuraPlan helps students organize academic work and decide what to focus on next.
 
 > **Project status:** Student project in development. Features and setup instructions may change as implementation progresses.
 
+
+## Preview:
+
+
+https://github.com/user-attachments/assets/12c25e84-4560-473f-a7a0-e0b2e33df1d8
+
+
 ## The idea
 
 Most task lists help you record what needs to be done. AuraPlan aims to help answer: **“Given my tasks, deadlines, and energy right now, what should I work on next?”**
