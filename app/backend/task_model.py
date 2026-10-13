@@ -1,4 +1,4 @@
-
+"""Shared task data model used by storage and scheduling modules."""
 from dataclasses import dataclass
 from typing import Optional
 
