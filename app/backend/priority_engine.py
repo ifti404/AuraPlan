@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any, Mapping
+from pattern_analyzer import analyze_patterns
 
 DONE_STATUSES = frozenset({"done", "completed", "cancelled"})
 
@@ -155,3 +156,8 @@ def explain_priority(task, *, now=None, energy: int = 3) -> str:
     reasons = score_breakdown(task, now=now, energy=energy)["reasons"]
     text = "; ".join(reasons)
     return text[:1].upper() + text[1:] if text else ""
+
+
+def behavioral_insights(sessions, *, min_sessions=4) -> dict:
+    """Return personal study recommendations separately from numeric scoring."""
+    return analyze_patterns(sessions, min_sessions=min_sessions)

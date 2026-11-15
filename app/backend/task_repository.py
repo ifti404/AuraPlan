@@ -73,6 +73,23 @@ class TaskRepository:
     def __init__(self, db_path=DEFAULT_DB_PATH):
         self.db_path = str(db_path)
         initialize_database(self.db_path)
+        # Keep behavioral history self-contained in the repository layer so
+        # deployments can add these files without changing the owned schema.sql.
+        with connection(self.db_path) as conn:
+            conn.execute("""CREATE TABLE IF NOT EXISTS study_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+                energy INTEGER CHECK(energy BETWEEN 1 AND 5),
+                load_level TEXT CHECK(load_level IN ('high', 'medium', 'low')),
+                planned_minutes INTEGER CHECK(planned_minutes >= 0),
+                actual_minutes INTEGER CHECK(actual_minutes >= 0),
+                completed INTEGER CHECK(completed IN (0, 1)),
+                perceived_difficulty INTEGER CHECK(perceived_difficulty BETWEEN 1 AND 5),
+                interrupted INTEGER CHECK(interrupted IN (0, 1)),
+                started_at TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+            )""")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_study_sessions_task ON study_sessions(task_id)")
 
     def create_task(self, *, title: str, deadline: str, estimated_minutes: int,
                     description: str = "", load_level: str = "high",
@@ -123,4 +140,35 @@ class TaskRepository:
         with connection(self.db_path) as conn:
             cur = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
             return cur.rowcount > 0
+
+    def record_study_session(self, *, task_id=None, energy=None, load_level=None,
+                             planned_minutes=None, actual_minutes=None, completed=None,
+                             perceived_difficulty=None, interrupted=None, started_at=None):
+        """Persist one locally observed study session; optional fields may be omitted."""
+        if energy is not None and (isinstance(energy, bool) or not 1 <= int(energy) <= 5):
+            raise ValueError("energy must be from 1 to 5")
+        if load_level is not None and str(load_level).casefold() not in {"high", "medium", "low"}:
+            raise ValueError("load_level must be high, medium, or low")
+        for name, value in (("planned_minutes", planned_minutes), ("actual_minutes", actual_minutes)):
+            if value is not None and (isinstance(value, bool) or int(value) < 0):
+                raise ValueError(f"{name} must be non-negative")
+        values = (task_id, energy, str(load_level).casefold() if load_level else None,
+                  planned_minutes, actual_minutes, None if completed is None else int(bool(completed)),
+                  perceived_difficulty, None if interrupted is None else int(bool(interrupted)), started_at)
+        with connection(self.db_path) as conn:
+            cur = conn.execute("""INSERT INTO study_sessions
+                (task_id,energy,load_level,planned_minutes,actual_minutes,completed,
+                 perceived_difficulty,interrupted,started_at) VALUES (?,?,?,?,?,?,?,?,?)""", values)
+            return cur.lastrowid
+
+    def list_study_sessions(self, *, limit=500):
+        """Return recent session evidence as dictionaries for local analysis."""
+        with connection(self.db_path) as conn:
+            return [dict(row) for row in conn.execute(
+                "SELECT * FROM study_sessions ORDER BY started_at DESC, id DESC LIMIT ?",
+                (max(1, int(limit)),)).fetchall()]
+
+    def study_recommendations(self, *, min_sessions=4):
+        from priority_engine import behavioral_insights
+        return behavioral_insights(self.list_study_sessions(), min_sessions=min_sessions)
 
