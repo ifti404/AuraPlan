@@ -1,5 +1,4 @@
 """AuraPlan desktop app with an animated, non-blocking startup screen."""
-from datetime import datetime, timedelta
 from pathlib import Path
 from queue import Empty, Queue
 from threading import Thread
@@ -12,22 +11,6 @@ from task_repository import TaskRepository
 from ui_compat import (COLORS, FONT_FAMILY, CUSTOM, ctk, button, energy_selector, frame, label,
                        brand_mark_image, get_theme_mode, messagebox, progress, root, set_progress,
                        set_theme, tk)
-
-
-def _seed_demo_tasks(repository):
-    """Add a few visible sample tasks the first time the empty app is opened."""
-    if repository.list_tasks():
-        return
-    base = datetime.now().astimezone()
-    examples = [
-        ("Review biology chapter", 1, 45, "high", "Summarize the key concepts and diagrams."),
-        ("Finish history essay outline", 2, 60, "high", "Draft the structure and supporting points."),
-        ("Organize lecture notes", 4, 25, "low", "Sort notes by topic before the next study block."),
-    ]
-    for title, days, minutes, load, description in examples:
-        repository.create_task(title=title,
-            deadline=(base + timedelta(days=days)).replace(hour=18, minute=0, second=0, microsecond=0).isoformat(),
-            estimated_minutes=minutes, load_level=load, description=description)
 
 
 class AuraPlanApp:
@@ -87,7 +70,6 @@ class AuraPlanApp:
         try:
             self._startup_result.put(("phase", 22, "Opening your local task database…"))
             repository = TaskRepository()
-            _seed_demo_tasks(repository)
         except Exception as exc:
             self._startup_result.put(("done", None, None, exc, None))
             return
