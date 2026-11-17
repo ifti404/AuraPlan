@@ -56,8 +56,6 @@ def _validate(data: Mapping[str, Any], *, creating=False) -> dict:
         result["deadline"] = _timestamp(result["deadline"], "deadline")
     if "scheduled_date" in result:
         result["scheduled_date"] = _timestamp(result["scheduled_date"], "scheduled_date", date_only=True)
-    if "scheduled_start" in result and result["scheduled_start"] is not None:
-        result["scheduled_start"] = str(result["scheduled_start"])
     return result
 
 
@@ -145,16 +143,28 @@ class TaskRepository:
                              planned_minutes=None, actual_minutes=None, completed=None,
                              perceived_difficulty=None, interrupted=None, started_at=None):
         """Persist one locally observed study session; optional fields may be omitted."""
-        if energy is not None and (isinstance(energy, bool) or not 1 <= int(energy) <= 5):
-            raise ValueError("energy must be from 1 to 5")
+        if energy is not None and (isinstance(energy, bool) or not isinstance(energy, int)
+                                   or not 1 <= energy <= 5):
+            raise ValueError("energy must be an integer from 1 to 5")
         if load_level is not None and str(load_level).casefold() not in {"high", "medium", "low"}:
             raise ValueError("load_level must be high, medium, or low")
         for name, value in (("planned_minutes", planned_minutes), ("actual_minutes", actual_minutes)):
-            if value is not None and (isinstance(value, bool) or int(value) < 0):
-                raise ValueError(f"{name} must be non-negative")
+            if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 0):
+                raise ValueError(f"{name} must be a non-negative integer")
+        if task_id is not None and (isinstance(task_id, bool) or not isinstance(task_id, int) or task_id < 1):
+            raise ValueError("task_id must be a positive integer")
+        if perceived_difficulty is not None and (
+                isinstance(perceived_difficulty, bool) or not isinstance(perceived_difficulty, int)
+                or not 1 <= perceived_difficulty <= 5):
+            raise ValueError("perceived_difficulty must be an integer from 1 to 5")
+        for name, value in (("completed", completed), ("interrupted", interrupted)):
+            if value is not None and value not in (True, False, 0, 1):
+                raise ValueError(f"{name} must be a boolean")
+        if started_at is not None:
+            started_at = _timestamp(started_at, "started_at")
         values = (task_id, energy, str(load_level).casefold() if load_level else None,
-                  planned_minutes, actual_minutes, None if completed is None else int(bool(completed)),
-                  perceived_difficulty, None if interrupted is None else int(bool(interrupted)), started_at)
+                  planned_minutes, actual_minutes, None if completed is None else int(completed),
+                  perceived_difficulty, None if interrupted is None else int(interrupted), started_at)
         with connection(self.db_path) as conn:
             cur = conn.execute("""INSERT INTO study_sessions
                 (task_id,energy,load_level,planned_minutes,actual_minutes,completed,

@@ -51,7 +51,12 @@ def _num(x):
 
 
 def _successful(r):
-    return bool(r.get("completed")) or str(r.get("outcome", "")).lower() in {"completed", "success"}
+    completed = r.get("completed")
+    # SQLite returns 0/1, but imported or serialized history may use strings.
+    # bool("0") is True, so normalize explicitly instead of relying on truthiness.
+    if isinstance(completed, str):
+        completed = completed.strip().casefold() in {"1", "true", "yes"}
+    return bool(completed) or str(r.get("outcome", "")).casefold() in {"completed", "success"}
 
 
 def _hour(x):

@@ -3,3 +3,4 @@ customtkinter
 opencv-python
 vosk
 sounddevice
+PyAudio
