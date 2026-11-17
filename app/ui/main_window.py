@@ -9,7 +9,7 @@ import sys
 from dashboard import Dashboard
 from profile_store import ProfileStore
 from task_repository import TaskRepository
-from ui_compat import (COLORS, CUSTOM, ctk, button, energy_selector, frame, label,
+from ui_compat import (COLORS, CUSTOM, ctk, button, energy_selector, entry, frame, label,
                        brand_mark_image, get_theme_mode, messagebox, progress, root, set_progress,
                        scrollable, set_theme, tk, typeface)
 
@@ -376,8 +376,15 @@ class AuraPlanApp:
                 self._voice_poll_after = self.window.after(120, self._poll_voice_model)
     def _set_active_nav(self, selected):
         for view, nav in self.nav_buttons.items():
-            nav.configure(fg_color=COLORS["primary"] if view == selected else "transparent",
-                          hover_color=COLORS["primary"])
+            if CUSTOM:
+                nav.configure(fg_color=COLORS["primary"] if view == selected else "transparent",
+                              hover_color=COLORS["primary"])
+            else:
+                nav.configure(
+                    background=COLORS["primary"] if view == selected else COLORS["forest"],
+                    activebackground=COLORS["primary"],
+                    foreground=COLORS["mint"],
+                )
 
     def navigate(self, view="today"):
         self.dashboard.show_view(view)

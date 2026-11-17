@@ -11,6 +11,9 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+.venv-build/
+/model/*
+!/model/README.txt
 downloads/
 eggs/
 .eggs/

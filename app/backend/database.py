@@ -11,6 +11,11 @@ from pathlib import Path
 def _default_db_path() -> Path:
     """Keep development data beside the backend, and packaged data in AppData."""
     if getattr(sys, "frozen", False):
+        executable_dir = Path(sys.executable).resolve().parent
+        # A portable bundle carries this marker next to AuraPlan.exe so its
+        # profiles and tasks travel with the USB folder.
+        if (executable_dir / "portable.mode").is_file():
+            return executable_dir / "data" / "auraplan.sqlite3"
         app_data = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
         return app_data / "AuraPlan" / "auraplan.sqlite3"
     return Path(__file__).with_name("auraplan.sqlite3")

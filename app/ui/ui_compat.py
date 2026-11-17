@@ -113,9 +113,18 @@ def frame(master, **kw):
         kw.setdefault("fg_color", COLORS["surface"])
         kw.setdefault("border_width", 0)
         return ctk.CTkFrame(master, **kw)
-    for key in ("fg_color", "corner_radius", "border_width", "border_color"):
-        kw.pop(key, None)
-    return ttk.Frame(master, **kw)
+    color = kw.pop("fg_color", COLORS["surface"])
+    kw.pop("corner_radius", None)
+    border_width = kw.pop("border_width", 0)
+    border_color = kw.pop("border_color", COLORS["border"])
+    if color == "transparent":
+        try:
+            color = master.cget("bg")
+        except tk.TclError:
+            color = COLORS["background"]
+    return tk.Frame(master, bg=color, bd=border_width,
+                    highlightthickness=1 if border_width else 0,
+                    highlightbackground=border_color, **kw)
 
 
 def label(master, text="", **kw):
@@ -123,9 +132,16 @@ def label(master, text="", **kw):
         kw.setdefault("font", typeface(12))
         kw.setdefault("text_color", COLORS["text"])
         return ctk.CTkLabel(master, text=text, **kw)
-    for key in ("text_color", "fg_color", "corner_radius", "border_width", "border_color"):
+    foreground = kw.pop("text_color", COLORS["text"])
+    background = kw.pop("fg_color", None)
+    for key in ("corner_radius", "border_width", "border_color"):
         kw.pop(key, None)
-    return ttk.Label(master, text=text, **kw)
+    if background is None or background == "transparent":
+        try:
+            background = master.cget("bg")
+        except tk.TclError:
+            background = COLORS["background"]
+    return tk.Label(master, text=text, fg=foreground, bg=background, **kw)
 
 
 def button(master, text, command=None, **kw):
@@ -136,9 +152,31 @@ def button(master, text, command=None, **kw):
         kw.setdefault("hover_color", COLORS["forest"])
         kw.setdefault("text_color", "#FFFFFF")
         return ctk.CTkButton(master, text=text, command=command, **kw)
-    for key in ("fg_color", "hover_color", "text_color", "corner_radius", "border_width", "border_color", "height", "anchor"):
+    background = kw.pop("fg_color", COLORS["primary"])
+    hover = kw.pop("hover_color", COLORS["forest"])
+    foreground = kw.pop("text_color", "#FFFFFF")
+    if background == "transparent":
+        try:
+            background = master.cget("bg")
+        except tk.TclError:
+            background = COLORS["background"]
+    for key in ("corner_radius", "border_width", "border_color"):
         kw.pop(key, None)
-    return ttk.Button(master, text=text, command=command, **kw)
+    pixel_width = kw.pop("width", None)
+    pixel_height = kw.pop("height", None)
+    if pixel_width is not None:
+        kw["width"] = max(4, round(pixel_width / 8))
+    if pixel_height is not None:
+        kw["height"] = max(1, round(pixel_height / 32))
+    kw.setdefault("relief", "flat")
+    kw.setdefault("padx", 12)
+    kw.setdefault("pady", 8)
+    widget = tk.Button(master, text=text, command=command, bg=background,
+                       fg=foreground, activebackground=hover,
+                       activeforeground=foreground, **kw)
+    widget.bind("<Enter>", lambda _event: widget.configure(bg=hover))
+    widget.bind("<Leave>", lambda _event: widget.configure(bg=background))
+    return widget
 
 
 def entry(master, variable=None, placeholder=None, **kw):
@@ -152,8 +190,19 @@ def entry(master, variable=None, placeholder=None, **kw):
         kw.setdefault("fg_color", COLORS["surface"])
         kw.setdefault("placeholder_text_color", COLORS["muted"])
         return ctk.CTkEntry(master, textvariable=variable, placeholder_text=placeholder, **kw)
-    kw.pop("placeholder_text", None); kw.pop("border_color", None); kw.pop("height", None)
-    return ttk.Entry(master, textvariable=variable, **kw)
+    kw.pop("placeholder_text", None)
+    kw.pop("border_color", None)
+    kw.pop("height", None)
+    if "width" in kw:
+        kw["width"] = max(6, round(kw["width"] / 8))
+    kw.setdefault("background", COLORS["surface"])
+    kw.setdefault("foreground", COLORS["text"])
+    kw.setdefault("insertbackground", COLORS["text"])
+    kw.setdefault("relief", "flat")
+    kw.setdefault("highlightthickness", 1)
+    kw.setdefault("highlightbackground", COLORS["border"])
+    kw.setdefault("highlightcolor", COLORS["primary"])
+    return tk.Entry(master, textvariable=variable, **kw)
 
 
 def textbox(master, **kw):
