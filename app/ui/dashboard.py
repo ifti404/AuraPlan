@@ -5,9 +5,9 @@ from app.voices.voice_session import VoiceSession
 from planner import plan_week
 from scheduler import generate_schedule
 from task_form import TaskForm
-from ui_compat import (COLORS, FONT_FAMILY, CUSTOM, button, energy_selector, entry,
+from ui_compat import (COLORS, CUSTOM, button, energy_selector, entry,
                        frame, get_theme_mode, label, messagebox, option_menu, brand_mark_image,
-                       scrollable, tk)
+                       scrollable, tk, typeface)
 
 
 class Dashboard:
@@ -42,10 +42,10 @@ class Dashboard:
         title_group = frame(header, fg_color="transparent")
         title_group.pack(side="left", fill="x", expand=True)
         label(title_group, datetime.now().strftime("%A, %B %d").upper(),
-              font=(FONT_FAMILY, 12, "bold"), text_color=COLORS["muted"]).pack(anchor="w")
-        label(title_group, self._greeting(), font=(FONT_FAMILY, 30, "bold")).pack(anchor="w", pady=(3, 0))
+              font=typeface(12, "bold"), text_color=COLORS["muted"]).pack(anchor="w")
+        label(title_group, self._greeting(), font=typeface(30, "bold")).pack(anchor="w", pady=(3, 0))
         self.energy_badge = label(title_group, "Energy · Medium",
-                                  font=(FONT_FAMILY, 13, "bold"),
+                                  font=typeface(13, "bold"),
                                   text_color=COLORS["leaf"] if get_theme_mode() == "dark"
                                   else COLORS["primary"])
         self.energy_badge.pack(anchor="w", pady=(3, 0))
@@ -73,7 +73,7 @@ class Dashboard:
         panel.pack(fill="x", padx=30, pady=(0, 22))
         row = frame(panel, fg_color="transparent")
         row.pack(fill="x", padx=14, pady=(12, 6))
-        label(row, "QUICK CAPTURE", font=(FONT_FAMILY, 12, "bold"),
+        label(row, "QUICK CAPTURE", font=typeface(12, "bold"),
               text_color=COLORS["forest"]).pack(side="left", padx=(0, 12))
         self.voice_text = tk.StringVar()
         entry(row, variable=self.voice_text, placeholder="Type a task or use your voice…",
@@ -82,7 +82,7 @@ class Dashboard:
         self.voice_button.pack(side="left", padx=(0, 8))
         button(row, "Add task", self.review_voice, width=90, height=36).pack(side="left")
         self.voice_status = label(panel, "Offline voice input · review your words before adding a task",
-                                  font=(FONT_FAMILY, 12), text_color=COLORS["forest"])
+                                  font=typeface(12), text_color=COLORS["forest"])
         self.voice_status.pack(anchor="w", padx=16, pady=(0, 10))
 
     def show(self):
@@ -170,12 +170,12 @@ class Dashboard:
         if self.deadline_risks:
             alert = frame(self.body, fg_color=COLORS["danger_surface"])
             alert.pack(fill="x", pady=(0, 12))
-            label(alert, "Deadline risks", font=(FONT_FAMILY, 14, "bold"),
+            label(alert, "Deadline risks", font=typeface(14, "bold"),
                   text_color=COLORS["danger"]).pack(anchor="w", padx=14, pady=(10, 3))
             label(alert, "\n".join(
                 f"{category}: {item['title']} — {item['reason']}"
                 for category, item in self.deadline_risks),
-                font=(FONT_FAMILY, 12), text_color=COLORS["danger"], wraplength=850,
+                font=typeface(12), text_color=COLORS["danger"], wraplength=850,
                 justify="left").pack(anchor="w", padx=14, pady=(0, 10))
         stats = frame(self.body, fg_color="transparent")
         stats.pack(fill="x", pady=(0, 16))
@@ -185,9 +185,9 @@ class Dashboard:
         for heading, value in values:
             card = frame(stats, fg_color=COLORS["surface"], height=78)
             card.pack(side="left", fill="x", expand=True, padx=(0, 10))
-            label(card, heading, font=(FONT_FAMILY, 11, "bold"), text_color=COLORS["muted"]).pack(
+            label(card, heading, font=typeface(11, "bold"), text_color=COLORS["muted"]).pack(
                 anchor="w", padx=14, pady=(12, 2))
-            label(card, value, font=(FONT_FAMILY, 19, "bold")).pack(anchor="w", padx=14)
+            label(card, value, font=typeface(19, "bold")).pack(anchor="w", padx=14)
 
         plan_panel = frame(self.body, fg_color=COLORS["surface"])
         plan_panel.pack(fill="both", expand=True)
@@ -195,31 +195,31 @@ class Dashboard:
         controls.pack(fill="x", padx=18, pady=(14, 10))
         title = frame(controls, fg_color="transparent")
         title.pack(side="left", fill="x", expand=True)
-        label(title, "Today's focus", font=(FONT_FAMILY, 24, "bold")).pack(anchor="w")
+        label(title, "Today's focus", font=typeface(24, "bold")).pack(anchor="w")
         label(title, "Study time and mental load for today's plan.",
-              font=(FONT_FAMILY, 13), text_color=COLORS["muted"]).pack(anchor="w", pady=(2, 0))
+              font=typeface(13), text_color=COLORS["muted"]).pack(anchor="w", pady=(2, 0))
 
         settings = frame(plan_panel, fg_color=COLORS["surface_alt"])
         settings.pack(fill="x", padx=18, pady=(0, 12))
-        label(settings, "PLAN SETTINGS", font=(FONT_FAMILY, 11, "bold"),
+        label(settings, "PLAN SETTINGS", font=typeface(11, "bold"),
               text_color=COLORS["muted"]).pack(anchor="w", padx=14, pady=(10, 5))
         settings_row = frame(settings, fg_color="transparent")
         settings_row.pack(fill="x", padx=12, pady=(0, 12))
         energy_group = frame(settings_row, fg_color="transparent")
         energy_group.pack(side="left", fill="x", expand=True, padx=(0, 14))
-        label(energy_group, "Current energy", font=(FONT_FAMILY, 12, "bold")).pack(anchor="w", pady=(0, 5))
+        label(energy_group, "Current energy", font=typeface(12, "bold")).pack(anchor="w", pady=(0, 5))
         energy_selector(energy_group, ["Low", "Medium", "High"], self.energy).pack(fill="x")
 
         time_group = frame(settings_row, fg_color="transparent")
         time_group.pack(side="left", fill="x", expand=True)
-        label(time_group, "Available study time", font=(FONT_FAMILY, 12, "bold")).pack(anchor="w", pady=(0, 5))
+        label(time_group, "Available study time", font=typeface(12, "bold")).pack(anchor="w", pady=(0, 5))
         time_controls = frame(time_group, fg_color="transparent")
         time_controls.pack(fill="x")
         self._minutes_entry = entry(time_controls, variable=self.minutes, width=96, height=40)
         self._minutes_entry.pack(side="left", padx=(0, 6))
         self._minutes_entry.bind("<FocusOut>", self._schedule_minutes_commit)
         self._minutes_entry.bind("<Return>", self._refresh_from_controls)
-        label(time_controls, "min", font=(FONT_FAMILY, 13, "bold"), text_color=COLORS["muted"]).pack(side="left")
+        label(time_controls, "min", font=typeface(13, "bold"), text_color=COLORS["muted"]).pack(side="left")
         button(time_controls, "Refresh plan", self._refresh_from_controls,
                width=112, height=40).pack(side="left", padx=(12, 0))
         line = frame(plan_panel, height=1, fg_color=COLORS["border"])
@@ -239,10 +239,10 @@ class Dashboard:
         time_card = frame(overview, fg_color=COLORS["surface_alt"], height=88)
         time_card.pack(side="left", fill="both", expand=True, padx=(0, 8))
         time_card.pack_propagate(False)
-        label(time_card, "STUDY TIME PLANNED", font=(FONT_FAMILY, 11, "bold"),
+        label(time_card, "STUDY TIME PLANNED", font=typeface(11, "bold"),
               text_color=COLORS["muted"]).pack(anchor="w", padx=14, pady=(10, 0))
         label(time_card, f"{scheduled_minutes} / {plan['available_minutes']} min",
-              font=(FONT_FAMILY, 22, "bold"),
+              font=typeface(22, "bold"),
               text_color=COLORS["leaf"] if get_theme_mode() == "dark"
               else COLORS["primary"]).pack(anchor="w", padx=14, pady=(0, 8))
 
@@ -251,7 +251,7 @@ class Dashboard:
         load_card.pack_propagate(False)
         load_header = frame(load_card, fg_color="transparent")
         load_header.pack(fill="x", padx=12, pady=(7, 0))
-        label(load_header, "MENTAL LOAD", font=(FONT_FAMILY, 11, "bold"),
+        label(load_header, "MENTAL LOAD", font=typeface(11, "bold"),
               text_color=COLORS["muted"]).pack(side="left")
         levels = frame(load_card, fg_color="transparent")
         levels.pack(fill="x", padx=12, pady=(2, 7))
@@ -261,9 +261,9 @@ class Dashboard:
                               else COLORS["primary"])):
             cell = frame(levels, fg_color=COLORS["surface"])
             cell.pack(side="left", fill="both", expand=True, padx=(0, 5))
-            label(cell, str(load_counts[level]), font=(FONT_FAMILY, 16, "bold"),
+            label(cell, str(load_counts[level]), font=typeface(16, "bold"),
                   text_color=color).pack(anchor="center", pady=(3, 0))
-            label(cell, f"{level.title()} load", font=(FONT_FAMILY, 10, "bold"),
+            label(cell, f"{level.title()} load", font=typeface(10, "bold"),
                   text_color=COLORS["muted"]).pack(anchor="center", pady=(0, 3))
 
         box = scrollable(plan_panel)
@@ -274,7 +274,7 @@ class Dashboard:
                              if self.deadline_risks else
                              "Your plan is clear. Add a task or increase today's study time.")
             label(inner, empty_message,
-                  font=(FONT_FAMILY, 12), text_color=COLORS["muted"], wraplength=620,
+                  font=typeface(12), text_color=COLORS["muted"], wraplength=620,
                   justify="left").pack(anchor="w", padx=16, pady=20)
         for index, item in enumerate(plan["scheduled"], 1):
             task = next((t for t in pending if t.id == item.get("id")), None)
@@ -286,16 +286,16 @@ class Dashboard:
                                 minutes=item.get("scheduled_minutes"))
         if plan["deferred"]:
             label(inner, f"{len(plan['deferred'])} task(s) were moved to a later study block.",
-                  font=(FONT_FAMILY, 12), text_color=COLORS["warning"]).pack(anchor="w", padx=14, pady=8)
+                  font=typeface(12), text_color=COLORS["warning"]).pack(anchor="w", padx=14, pady=8)
 
     def _render_tasks(self, tasks):
         toolbar = frame(self.body, fg_color="transparent")
         toolbar.pack(fill="x", pady=(0, 12))
         title = frame(toolbar, fg_color="transparent")
         title.pack(side="left", fill="x", expand=True)
-        label(title, "Your tasks", font=(FONT_FAMILY, 22, "bold")).pack(anchor="w")
+        label(title, "Your tasks", font=typeface(22, "bold")).pack(anchor="w")
         label(title, "Search, update, or complete your academic work.",
-              font=(FONT_FAMILY, 12), text_color=COLORS["muted"]).pack(anchor="w")
+              font=typeface(12), text_color=COLORS["muted"]).pack(anchor="w")
         search_entry = entry(toolbar, variable=self.search, placeholder="Search tasks", width=180,
                              height=36)
         search_entry.pack(side="right", padx=(8, 0))
@@ -321,24 +321,24 @@ class Dashboard:
                         or query in task.description.casefold())]
         if not visible:
             label(inner, "No matching tasks. Add a task or change your search/filter.",
-                  font=(FONT_FAMILY, 12), text_color=COLORS["muted"]).pack(anchor="w", padx=14, pady=20)
+                  font=typeface(12), text_color=COLORS["muted"]).pack(anchor="w", padx=14, pady=20)
         for index, task in enumerate(visible, 1):
             self._task_card(inner, task, index)
 
     def _render_week(self, week):
         header = frame(self.body, fg_color="transparent")
         header.pack(fill="x", pady=(0, 12))
-        label(header, "7-day plan", font=(FONT_FAMILY, 22, "bold")).pack(anchor="w")
+        label(header, "7-day plan", font=typeface(22, "bold")).pack(anchor="w")
         label(header, "A flexible outline. Refresh today's available minutes on the Today page.",
-              font=(FONT_FAMILY, 12), text_color=COLORS["muted"]).pack(anchor="w", pady=(2, 0))
+              font=typeface(12), text_color=COLORS["muted"]).pack(anchor="w", pady=(2, 0))
         risks = week["late"] + week["at_risk"]
         if risks:
             alert = frame(self.body, fg_color=COLORS["danger_surface"])
             alert.pack(fill="x", pady=(0, 12))
-            label(alert, "Deadline risks", font=(FONT_FAMILY, 14, "bold"),
+            label(alert, "Deadline risks", font=typeface(14, "bold"),
                   text_color=COLORS["danger"]).pack(anchor="w", padx=14, pady=(10, 3))
             label(alert, "\n".join(f"• {item['title']} — {item['reason']}" for item in risks),
-                  font=(FONT_FAMILY, 12), text_color=COLORS["danger"], wraplength=800,
+                  font=typeface(12), text_color=COLORS["danger"], wraplength=800,
                   justify="left").pack(anchor="w", padx=14, pady=(0, 10))
         panel = frame(self.body, fg_color=COLORS["surface"])
         panel.pack(fill="both", expand=True)
@@ -351,18 +351,18 @@ class Dashboard:
             date_label = datetime.fromisoformat(day["date"]).strftime("%A · %B %d")
             head = frame(day_card, fg_color="transparent")
             head.pack(fill="x", padx=14, pady=(10, 5))
-            label(head, date_label, font=(FONT_FAMILY, 14, "bold")).pack(side="left")
+            label(head, date_label, font=typeface(14, "bold")).pack(side="left")
             label(head, f"{day['used_minutes']} / {day['available_minutes']} min",
-                  font=(FONT_FAMILY, 14, "bold"),
+                  font=typeface(14, "bold"),
                   text_color=COLORS["leaf"] if get_theme_mode() == "dark"
                   else COLORS["primary"]).pack(side="right")
             if day["blocks"]:
                 for block in day["blocks"]:
                     label(day_card, f"•  {block['title']}    {block['minutes']} min",
-                          font=(FONT_FAMILY, 12), text_color=COLORS["text"]).pack(
+                          font=typeface(12), text_color=COLORS["text"]).pack(
                               anchor="w", padx=16, pady=(0, 5))
             else:
-                label(day_card, "No study blocks planned", font=(FONT_FAMILY, 12),
+                label(day_card, "No study blocks planned", font=typeface(12),
                       text_color=COLORS["muted"]).pack(anchor="w", padx=16, pady=(0, 10))
 
     def _task_card(self, parent, task, number, note="", minutes=None):
@@ -370,8 +370,8 @@ class Dashboard:
         card.pack(fill="x", padx=5, pady=5)
         row = frame(card, fg_color="transparent")
         row.pack(fill="x", padx=13, pady=(10, 3))
-        label(row, f"{number:02d}", font=(FONT_FAMILY, 11, "bold"), text_color=COLORS["muted"]).pack(side="left")
-        label(row, task.title, font=(FONT_FAMILY, 14, "bold"), wraplength=560,
+        label(row, f"{number:02d}", font=typeface(11, "bold"), text_color=COLORS["muted"]).pack(side="left")
+        label(row, task.title, font=typeface(14, "bold"), wraplength=560,
               justify="left").pack(side="left", padx=10, fill="x", expand=True)
         dark_mode = get_theme_mode() == "dark"
         load_color = {
@@ -381,12 +381,12 @@ class Dashboard:
         }.get(task.load_level.casefold(), COLORS["muted"])
         meta = frame(card, fg_color="transparent")
         meta.pack(fill="x", padx=38, pady=(0, 3))
-        label(meta, f"{task.load_level.title()} load", font=(FONT_FAMILY, 12, "bold"),
+        label(meta, f"{task.load_level.title()} load", font=typeface(12, "bold"),
               text_color=load_color).pack(side="left")
         label(meta, f"{minutes or task.estimated_minutes} min  ·  Due {self._format_due(task.deadline)}  ·  {task.status.replace('_', ' ').title()}",
-              font=(FONT_FAMILY, 11), text_color=COLORS["muted"]).pack(side="left", padx=(9, 0))
+              font=typeface(11), text_color=COLORS["muted"]).pack(side="left", padx=(9, 0))
         if note:
-            label(card, note, font=(FONT_FAMILY, 12), text_color=COLORS["muted"],
+            label(card, note, font=typeface(12), text_color=COLORS["muted"],
                   wraplength=680, justify="left").pack(anchor="w", padx=38, pady=(2, 5))
         actions = frame(card, fg_color="transparent")
         actions.pack(fill="x", padx=37, pady=(2, 9))

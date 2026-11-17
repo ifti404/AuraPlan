@@ -7,10 +7,11 @@ import ctypes
 import sys
 
 from dashboard import Dashboard
+from profile_store import ProfileStore
 from task_repository import TaskRepository
-from ui_compat import (COLORS, FONT_FAMILY, CUSTOM, ctk, button, energy_selector, frame, label,
+from ui_compat import (COLORS, CUSTOM, ctk, button, energy_selector, frame, label,
                        brand_mark_image, get_theme_mode, messagebox, progress, root, set_progress,
-                       set_theme, tk)
+                       scrollable, set_theme, tk, typeface)
 
 
 class AuraPlanApp:
@@ -29,17 +30,23 @@ class AuraPlanApp:
         self.window.minsize(980, 680)
         self._startup_started = monotonic()
         self._startup_result = Queue()
+        self._profile_result = Queue()
+        self.profile_store = None
+        self.profiles = []
+        self.profile = None
         self._voice_result = Queue()
         self.voice_error = None
+        self.voice_input = None
         self.voice_loading = False
+        self._voice_model_loading = False
         self._startup_value = 0.0
         self._startup_target = 0.0
         self._startup_phase = "Preparing AuraPlan…"
         self._startup_done = False
         self._build_startup_screen()
         self.window.update_idletasks()
-        Thread(target=self._load_backend, name="AuraPlanStartup", daemon=True).start()
-        self.window.after(60, self._poll_startup)
+        Thread(target=self._load_profiles, name="AuraPlanProfiles", daemon=True).start()
+        self.window.after(60, self._poll_profiles)
 
     def _build_startup_screen(self):
         self.startup_panel = frame(self.window, fg_color=COLORS["forest"], corner_radius=0)
@@ -53,25 +60,136 @@ class AuraPlanApp:
             label(card, image=self.startup_brand, text="", width=72, height=72).pack(
                 pady=(26, 0))
         else:
-            label(card, "✦", font=(FONT_FAMILY, 24, "bold"),
+            label(card, "✦", font=typeface(24, "bold"),
                   text_color=COLORS["leaf"]).pack(pady=(26, 0))
-        label(card, "AURAPLAN", font=(FONT_FAMILY, 30, "bold"),
+        label(card, "AURAPLAN", font=typeface(30, "bold"),
               text_color=COLORS["text"]).pack(pady=(2, 5))
-        label(card, "Your calm academic planner", font=(FONT_FAMILY, 15),
+        label(card, "Your calm academic planner", font=typeface(15),
               text_color=COLORS["muted"]).pack(pady=(0, 27))
         self.startup_status = label(card, "Getting your workspace ready…",
-                                    font=(FONT_FAMILY, 12), text_color=COLORS["muted"])
+                                    font=typeface(12), text_color=COLORS["muted"])
         self.startup_status.pack(pady=(0, 14))
         self.startup_progress = progress(card, width=300, height=12)
         self.startup_progress.pack(pady=(0, 32))
         set_progress(self.startup_progress, 0)
 
-    def _load_backend(self):
+    def _load_profiles(self):
         try:
-            self._startup_result.put(("phase", 22, "Opening your local task database…"))
-            repository = TaskRepository()
+            self._profile_result.put((ProfileStore(), None))
+        except Exception as exc:
+            self._profile_result.put((None, exc))
+
+    def _poll_profiles(self):
+        try:
+            self.profile_store, error = self._profile_result.get_nowait()
+        except Empty:
+            if (monotonic() - self._startup_started) * 1000 < 1000:
+                self.window.after(60, self._poll_profiles)
+            else:
+                self.startup_status.configure(text="Preparing your profiles…")
+                self.window.after(60, self._poll_profiles)
+            return
+        if error:
+            self.startup_panel.destroy()
+            messagebox.showerror("AuraPlan startup", f"Could not load profiles.\n\n{error}",
+                                 parent=self.window)
+            self.window.destroy()
+            return
+        self.profiles = self.profile_store.list_profiles()
+        elapsed = (monotonic() - self._startup_started) * 1000
+        if elapsed < 1000:
+            self.window.after(int(1000 - elapsed), self._show_profile_picker)
+        else:
+            self._show_profile_picker()
+
+    def _show_profile_picker(self):
+        if hasattr(self, "startup_panel") and self.startup_panel.winfo_exists():
+            self.startup_panel.destroy()
+        self.profile_panel = frame(self.window, fg_color=COLORS["background"], corner_radius=0)
+        self.profile_panel.pack(fill="both", expand=True)
+        card = frame(self.profile_panel, width=700, fg_color=COLORS["surface"])
+        card.pack(expand=True, padx=24, pady=28)
+        card.pack_propagate(False)
+        card.configure(height=620)
+        self.profile_brand = brand_mark_image(card, 58)
+        if self.profile_brand is not None:
+            label(card, image=self.profile_brand, text="", width=58, height=58).pack(pady=(30, 10))
+        label(card, "Who's planning today?", font=typeface(28, "bold")).pack(pady=(0, 5))
+        label(card, "Choose a local profile to open its private study workspace.",
+              font=typeface(13), text_color=COLORS["muted"]).pack(pady=(0, 22))
+        profile_scroller = scrollable(card, height=300)
+        profile_scroller.pack(fill="both", expand=True, padx=36)
+        profiles_area = profile_scroller if CUSTOM else profile_scroller.inner
+        for index, profile in enumerate(self.profiles):
+            letter = profile["name"].strip()[:1].upper()
+            row = frame(profiles_area, fg_color=COLORS["surface_alt"])
+            row.pack(fill="x", pady=5)
+            avatar = frame(row, width=48, height=48, fg_color=COLORS["primary"],
+                           corner_radius=24)
+            avatar.pack_propagate(False)
+            label(avatar, letter, font=typeface(20, "bold"),
+                  text_color=COLORS["mint"]).pack(expand=True)
+            avatar.pack(side="left", padx=12, pady=10)
+            info = frame(row, fg_color="transparent")
+            info.pack(side="left", fill="x", expand=True, padx=(0, 8))
+            label(info, profile["name"], font=typeface(15, "bold")).pack(anchor="w")
+            label(info, "Local profile · stored on this device", font=typeface(11),
+                  text_color=COLORS["muted"]).pack(anchor="w")
+            button(row, "Open", lambda item=profile: self._select_profile(item),
+                   width=92, height=38).pack(side="right", padx=12, pady=10)
+
+        create_row = frame(card, fg_color="transparent")
+        create_row.pack(fill="x", padx=36, pady=(16, 30))
+        self.new_profile_name = tk.StringVar()
+        self.new_profile_name_entry = entry(
+            create_row, variable=self.new_profile_name, placeholder="Add a profile name…",
+            height=42)
+        self.new_profile_name_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        button(create_row, "+  Add profile", self._create_profile,
+               width=142, height=42).pack(side="right")
+        self.new_profile_name_entry.bind("<Return>", lambda _event: self._create_profile())
+
+    def _create_profile(self):
+        try:
+            profile = self.profile_store.create_profile(self.new_profile_name.get())
+        except ValueError as exc:
+            messagebox.showwarning("Add profile", str(exc), parent=self.window)
+            return
+        self.profiles = self.profile_store.list_profiles()
+        self._select_profile(profile)
+
+    def _select_profile(self, profile):
+        self.profile = profile
+        if hasattr(self, "profile_panel") and self.profile_panel.winfo_exists():
+            self.profile_panel.destroy()
+        self._startup_started = monotonic()
+        self._startup_result = Queue()
+        self._startup_value = 0.0
+        self._startup_target = 0.0
+        self._startup_phase = "Opening your profile…"
+        self._startup_done = False
+        self._build_startup_screen()
+        self.window.update_idletasks()
+        Thread(target=self._load_backend, args=(profile,),
+               name="AuraPlanWorkspace", daemon=True).start()
+        self.window.after(50, self._poll_startup)
+
+    def _load_backend(self, profile):
+        try:
+            self._startup_result.put(("phase", 22, f"Opening {profile['name']}'s workspace…"))
+            repository = TaskRepository(self.profile_store.database_path(profile["id"]))
         except Exception as exc:
             self._startup_result.put(("done", None, None, exc, None))
+            return
+
+        if self.voice_input is not None:
+            self._startup_result.put(("done", repository, self._model_path, None, None))
+            return
+        if self.voice_error is not None:
+            self._startup_result.put(("done", repository, None, None, self.voice_error))
+            return
+        if getattr(self, "_voice_model_loading", False):
+            self._startup_result.put(("done", repository, self._model_path, None, None))
             return
 
         try:
@@ -104,6 +222,7 @@ class AuraPlanApp:
                     + ", ".join(missing_files)
                 )
             self._model_path = model_path
+            self._voice_model_loading = True
             Thread(target=self._load_voice_model, args=(model_path,),
                    name="AuraPlanVoskModel", daemon=True).start()
             self._startup_result.put(("done", repository, model_path, None, None))
@@ -157,15 +276,15 @@ class AuraPlanApp:
             self.window.destroy()
             return
         self.repo = self._loaded_repository
-        self.voice_input = None
         self.voice_error = self._voice_error
-        self.voice_loading = not bool(self.voice_error)
+        self.voice_loading = not bool(self.voice_error or self.voice_input)
         self._build_shell()
-        if self._voice_error:
+        if self.voice_input:
+            self.dashboard.set_voice_ready(self.voice_input)
+        elif self._voice_error:
             self.dashboard.set_voice_unavailable(self._voice_error)
         else:
             self.dashboard.set_voice_loading()
-            self.window.after(120, self._poll_voice_model)
 
     def _load_voice_model(self, model_path):
         try:
@@ -175,18 +294,25 @@ class AuraPlanApp:
             self._voice_result.put((None, exc))
 
     def _poll_voice_model(self):
+        self._voice_poll_after = None
         try:
             voice_input, error = self._voice_result.get_nowait()
         except Empty:
-            self.window.after(120, self._poll_voice_model)
+            self._voice_poll_after = self.window.after(120, self._poll_voice_model)
             return
+        self._voice_model_loading = False
         self.voice_input = voice_input
         self.voice_error = error
         self.voice_loading = False
-        if error:
-            self.dashboard.set_voice_unavailable(error)
-        else:
-            self.dashboard.set_voice_ready(voice_input)
+        if hasattr(self, "dashboard"):
+            try:
+                if self.dashboard.panel.winfo_exists():
+                    if error:
+                        self.dashboard.set_voice_unavailable(error)
+                    else:
+                        self.dashboard.set_voice_ready(voice_input)
+            except tk.TclError:
+                pass
 
     def _build_shell(self, state=None):
         shell = frame(self.window, fg_color=COLORS["background"])
@@ -200,16 +326,25 @@ class AuraPlanApp:
         self.brand_mark = brand_mark_image(brand, 44)
         if self.brand_mark is not None:
             label(brand, image=self.brand_mark, text="", width=44, height=44).pack(side="left", padx=(0, 10))
-        label(brand, "AURAPLAN", font=(FONT_FAMILY, 19, "bold"), text_color=COLORS["mint"]).pack(side="left")
-        label(self.sidebar, "WORKSPACE", font=(FONT_FAMILY, 10, "bold"),
+        label(brand, "AURAPLAN", font=typeface(19, "bold"), text_color=COLORS["mint"]).pack(side="left")
+        label(self.sidebar, "WORKSPACE", font=typeface(10, "bold"),
               text_color=COLORS["leaf"]).pack(anchor="w", padx=18, pady=(0, 8))
         self.nav_buttons = {}
         for view, caption in (("today", "Today"), ("tasks", "My tasks"), ("week", "7-day plan")):
             nav = button(self.sidebar, caption, lambda v=view: self.navigate(v), height=44,
                          anchor="w", fg_color="transparent", hover_color=COLORS["primary"],
-                         text_color=COLORS["mint"], font=(FONT_FAMILY, 13, "bold"))
+                         text_color=COLORS["mint"], font=typeface(13, "bold"))
             nav.pack(fill="x", padx=10, pady=3)
             self.nav_buttons[view] = nav
+        profile_panel = frame(self.sidebar, fg_color=COLORS["primary"])
+        profile_panel.pack(side="bottom", fill="x", padx=12, pady=16)
+        label(profile_panel, "CURRENT PROFILE", font=typeface(9, "bold"),
+              text_color=COLORS["mint"]).pack(anchor="w", padx=11, pady=(10, 1))
+        label(profile_panel, self.profile["name"], font=typeface(13, "bold"),
+              text_color="#FFFFFF").pack(anchor="w", padx=11, pady=(0, 7))
+        button(profile_panel, "Switch profile", self._switch_profile,
+               height=34, fg_color=COLORS["forest"], hover_color=COLORS["background"],
+               text_color=COLORS["mint"]).pack(fill="x", padx=8, pady=(0, 8))
         self._set_active_nav(state.get("view", "today") if state else "today")
         if not hasattr(self, "energy_level"):
             self.energy_level = tk.StringVar(value="Medium")
@@ -233,6 +368,8 @@ class AuraPlanApp:
             self.dashboard.set_voice_unavailable(self.voice_error)
         elif self.voice_loading:
             self.dashboard.set_voice_loading()
+            if not getattr(self, "_voice_poll_after", None):
+                self._voice_poll_after = self.window.after(120, self._poll_voice_model)
     def _set_active_nav(self, selected):
         for view, nav in self.nav_buttons.items():
             nav.configure(fg_color=COLORS["primary"] if view == selected else "transparent",
@@ -241,6 +378,15 @@ class AuraPlanApp:
     def navigate(self, view="today"):
         self.dashboard.show_view(view)
         self._set_active_nav(view)
+
+    def _switch_profile(self):
+        if getattr(self.dashboard, "voice_session", None) is not None:
+            messagebox.showinfo("Voice input", "Stop voice recording before switching profiles.",
+                                parent=self.window)
+            return
+        self.dashboard.dispose()
+        self.shell.destroy()
+        self._show_profile_picker()
 
     def _toggle_theme(self):
         if getattr(self, "_theme_change_pending", False):

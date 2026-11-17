@@ -3,9 +3,9 @@ import calendar
 from datetime import date, datetime
 
 from task_classifier import classify_task_detail
-from ui_compat import (COLORS, FONT_FAMILY, CUSTOM, button, ctk, entry, frame,
+from ui_compat import (COLORS, CUSTOM, button, ctk, entry, frame,
                        get_theme_mode, label, messagebox, scrollable, option_menu,
-                       tk, textbox)
+                       tk, textbox, typeface)
 
 
 class TaskForm:
@@ -25,11 +25,11 @@ class TaskForm:
         body = scrollable(self.window)
         body.pack(fill="both", expand=True, padx=pad, pady=pad)
         content = body if CUSTOM else body.inner
-        label(content, "EDIT TASK" if task else "NEW TASK", font=(FONT_FAMILY, 24, "bold"),
+        label(content, "EDIT TASK" if task else "NEW TASK", font=typeface(24, "bold"),
               text_color=COLORS["text"]).pack(anchor="w", pady=(0, 16))
         label(content,
               "AuraPlan predicts mental load from the task details; you can change its suggestion below.",
-              font=(FONT_FAMILY, 11), text_color=COLORS["muted"], wraplength=470,
+              font=typeface(11), text_color=COLORS["muted"], wraplength=470,
               justify="left").pack(anchor="w", pady=(0, 8))
 
         self.title_var = tk.StringVar(value=task.title if task else initial_title)
@@ -47,8 +47,8 @@ class TaskForm:
         self._field(content, "Task title", self.title_var, "e.g. Biology chapter review")
         deadline_header = frame(content, fg_color="transparent")
         deadline_header.pack(fill="x", pady=(10, 6))
-        label(deadline_header, "Deadline", font=(FONT_FAMILY, 13, "bold")).pack(side="left")
-        label(deadline_header, "Pick a date, then set a time", font=(FONT_FAMILY, 10),
+        label(deadline_header, "Deadline", font=typeface(13, "bold")).pack(side="left")
+        label(deadline_header, "Pick a date, then set a time", font=typeface(10),
               text_color=COLORS["muted"]).pack(side="right")
         deadline_row = frame(content, fg_color="transparent")
         deadline_row.pack(fill="x")
@@ -63,7 +63,7 @@ class TaskForm:
                                   else COLORS["mint"], text_color=COLORS["text"])
         self.time_button.pack(side="left")
         self._field(content, "Estimated minutes", self.minutes_var, "45")
-        label(content, "Description", font=(FONT_FAMILY, 13, "bold")).pack(anchor="w", pady=(10, 5))
+        label(content, "Description", font=typeface(13, "bold")).pack(anchor="w", pady=(10, 5))
         self.description = textbox(content, height=120 if CUSTOM else 7, wrap="word")
         self.description.pack(fill="x")
         if task and task.description:
@@ -74,16 +74,16 @@ class TaskForm:
         load_panel.pack(fill="x", pady=(12, 0))
         load_header = frame(load_panel, fg_color="transparent")
         load_header.pack(fill="x", padx=12, pady=(10, 7))
-        label(load_header, "Mental load", font=(FONT_FAMILY, 14, "bold")).pack(anchor="w")
+        label(load_header, "Mental load", font=typeface(14, "bold")).pack(anchor="w")
         label(load_header, "Suggested from task details · change if needed",
-              font=(FONT_FAMILY, 10), text_color=COLORS["muted"]).pack(anchor="w")
+              font=typeface(10), text_color=COLORS["muted"]).pack(anchor="w")
         self.load_menu = option_menu(
             load_panel, ["Automatic", "High", "Medium", "Low"], self.load_choice,
             command=self._update_load_prediction, height=38,
         )
         self.load_menu.pack(fill="x", padx=12, pady=(0, 6))
         self.load_prediction_text = label(
-            load_panel, "", font=(FONT_FAMILY, 11, "bold"),
+            load_panel, "", font=typeface(11, "bold"),
             text_color=COLORS["leaf"] if get_theme_mode() == "dark" else COLORS["primary"],
             wraplength=440, justify="left",
         )
@@ -136,9 +136,9 @@ class TaskForm:
         self.clock_ampm = tk.StringVar(value=self.ampm_var.get())
         panel = frame(self.clock_window, fg_color=COLORS["surface"])
         panel.pack(fill="both", expand=True, padx=14, pady=14)
-        label(panel, "SET DEADLINE TIME", font=(FONT_FAMILY, 11, "bold"),
+        label(panel, "SET DEADLINE TIME", font=typeface(11, "bold"),
               text_color=COLORS["muted"]).pack(pady=(15, 3))
-        self.clock_preview = label(panel, "", font=(FONT_FAMILY, 30, "bold"),
+        self.clock_preview = label(panel, "", font=typeface(30, "bold"),
                                    text_color=COLORS["text"])
         self.clock_preview.pack(pady=(0, 16))
         self._update_clock_preview()
@@ -150,7 +150,7 @@ class TaskForm:
         for column, (caption, values, variable) in enumerate(choices):
             section = frame(controls, fg_color="transparent")
             section.grid(row=0, column=column, padx=7, sticky="ew")
-            label(section, caption, font=(FONT_FAMILY, 10, "bold"),
+            label(section, caption, font=typeface(10, "bold"),
                   text_color=COLORS["muted"]).pack(pady=(0, 5))
             menu = option_menu(section, values, variable, command=lambda _value: self._update_clock_preview(),
                                width=84 if CUSTOM else 6, height=36)
@@ -159,7 +159,7 @@ class TaskForm:
         controls.grid_columnconfigure(1, weight=1)
         period = frame(controls, fg_color="transparent")
         period.grid(row=0, column=2, padx=7, sticky="ew")
-        label(period, "AM / PM", font=(FONT_FAMILY, 10, "bold"),
+        label(period, "AM / PM", font=typeface(10, "bold"),
               text_color=COLORS["muted"]).pack(pady=(0, 5))
         if CUSTOM:
             ctk.CTkSegmentedButton(
@@ -261,14 +261,14 @@ class TaskForm:
         month_row.pack(fill="x", padx=8, pady=(8, 12))
         button(month_row, "‹", lambda: self._change_calendar_month(-1), width=42,
                height=36).pack(side="left")
-        self.calendar_title = label(month_row, "", font=(FONT_FAMILY, 16, "bold"))
+        self.calendar_title = label(month_row, "", font=typeface(16, "bold"))
         self.calendar_title.pack(side="left", fill="x", expand=True)
         button(month_row, "›", lambda: self._change_calendar_month(1), width=42,
                height=36).pack(side="right")
         weekdays = frame(panel, fg_color="transparent")
         weekdays.pack(fill="x", padx=8)
         for index, name in enumerate(("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")):
-            label(weekdays, name, font=(FONT_FAMILY, 10, "bold"),
+            label(weekdays, name, font=typeface(10, "bold"),
                   text_color=COLORS["muted"], width=40).grid(row=0, column=index, padx=1, pady=3)
         self.calendar_grid = frame(panel, fg_color="transparent")
         self.calendar_grid.pack(fill="x", padx=8)
@@ -371,7 +371,7 @@ class TaskForm:
             pass
 
     def _field(self, parent, title, variable, placeholder):
-        label(parent, title, font=(FONT_FAMILY, 13, "bold")).pack(anchor="w", pady=(10, 6))
+        label(parent, title, font=typeface(13, "bold")).pack(anchor="w", pady=(10, 6))
         entry(parent, variable=variable, placeholder=placeholder, height=36).pack(fill="x")
 
     def _update_load_prediction(self, *_args):

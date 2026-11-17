@@ -31,7 +31,14 @@ DARK_COLORS = {
 }
 THEME_MODE = "light"
 COLORS = dict(LIGHT_COLORS)
-FONT_FAMILY = "Aptos"
+FONT_FAMILY = "Segoe UI"
+FONT_SCALE = (10, 12, 14, 18, 24, 30)
+
+
+def typeface(size, weight="normal"):
+    """Build every screen font from the same platform-friendly type scale."""
+    size = min(FONT_SCALE, key=lambda standard: (abs(standard - size), -standard))
+    return (FONT_FAMILY, size, weight) if weight != "normal" else (FONT_FAMILY, size)
 
 try:
     import customtkinter as ctk
@@ -59,7 +66,7 @@ def root():
     except tk.TclError:
         pass
     style.configure(".", background=COLORS["background"], foreground=COLORS["text"],
-                    font=(FONT_FAMILY, 11))
+                    font=typeface(12))
     style.configure("TFrame", background=COLORS["background"])
     style.configure("TLabel", background=COLORS["background"], foreground=COLORS["text"])
     style.configure("TButton", background=COLORS["primary"], foreground="white",
@@ -85,7 +92,7 @@ def set_theme(mode, window=None):
         window.configure(bg=COLORS["background"])
         style = ttk.Style(window)
         style.configure(".", background=COLORS["background"], foreground=COLORS["text"],
-                        font=(FONT_FAMILY, 11))
+                        font=typeface(12))
         style.configure("TFrame", background=COLORS["background"])
         style.configure("TLabel", background=COLORS["background"], foreground=COLORS["text"])
         style.configure("TButton", background=COLORS["primary"], foreground="white",
@@ -113,16 +120,17 @@ def frame(master, **kw):
 
 def label(master, text="", **kw):
     if CUSTOM:
-        kw.setdefault("font", (FONT_FAMILY, 11))
+        kw.setdefault("font", typeface(12))
         kw.setdefault("text_color", COLORS["text"])
         return ctk.CTkLabel(master, text=text, **kw)
-    kw.pop("text_color", None); kw.pop("fg_color", None)
+    for key in ("text_color", "fg_color", "corner_radius", "border_width", "border_color"):
+        kw.pop(key, None)
     return ttk.Label(master, text=text, **kw)
 
 
 def button(master, text, command=None, **kw):
     if CUSTOM:
-        kw.setdefault("font", (FONT_FAMILY, 12, "bold"))
+        kw.setdefault("font", typeface(12, "bold"))
         kw.setdefault("corner_radius", 13)
         kw.setdefault("fg_color", COLORS["primary"])
         kw.setdefault("hover_color", COLORS["forest"])
@@ -135,7 +143,7 @@ def button(master, text, command=None, **kw):
 
 def entry(master, variable=None, placeholder=None, **kw):
     if CUSTOM:
-        kw.setdefault("font", (FONT_FAMILY, 12))
+        kw.setdefault("font", typeface(12))
         kw.setdefault("corner_radius", 12)
         kw.setdefault("border_color", COLORS["border"])
         kw.setdefault("border_width", 1)
@@ -150,7 +158,7 @@ def entry(master, variable=None, placeholder=None, **kw):
 
 def textbox(master, **kw):
     if CUSTOM:
-        kw.setdefault("font", (FONT_FAMILY, 12))
+        kw.setdefault("font", typeface(12))
         kw.setdefault("corner_radius", 12)
         kw.setdefault("border_color", COLORS["border"])
         kw.setdefault("fg_color", COLORS["surface"])
