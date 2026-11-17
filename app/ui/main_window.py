@@ -26,8 +26,12 @@ class AuraPlanApp:
             # Apply after Tk has mapped the root HWND; on Windows 11 the
             # taskbar may ignore an icon set only before the first map event.
             self.window.after(100, self._apply_windows_taskbar_icon)
-        self.window.geometry("1280x850")
-        self.window.minsize(980, 680)
+        screen_width = self.window.winfo_screenwidth()
+        screen_height = self.window.winfo_screenheight()
+        window_width = max(600, min(1280, screen_width - 40))
+        window_height = max(480, min(850, screen_height - 80))
+        self.window.geometry(f"{window_width}x{window_height}")
+        self.window.minsize(min(980, window_width), min(680, window_height))
         self._startup_started = monotonic()
         self._startup_result = Queue()
         self._profile_result = Queue()
@@ -110,7 +114,7 @@ class AuraPlanApp:
         card = frame(self.profile_panel, width=700, fg_color=COLORS["surface"])
         card.pack(expand=True, padx=24, pady=28)
         card.pack_propagate(False)
-        card.configure(height=620)
+        card.configure(height=max(480, min(620, self.window.winfo_screenheight() - 40)))
         self.profile_brand = brand_mark_image(card, 58)
         if self.profile_brand is not None:
             label(card, image=self.profile_brand, text="", width=58, height=58).pack(pady=(30, 10))
