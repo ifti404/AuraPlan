@@ -1,6 +1,6 @@
 # PyInstaller build definition. Build on Windows with Python 3.12 x64.
 from pathlib import Path
-from PyInstaller.utils.hooks import collect_submodules, collect_data_files
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files, collect_dynamic_libs
 
 project = Path(SPECPATH)
 datas = [
@@ -8,6 +8,7 @@ datas = [
     (str(project / "app" / "assets" / "icons"), "app/assets/icons"),
 ]
 datas += collect_data_files("customtkinter")
+binaries = collect_dynamic_libs("vosk")
 hiddenimports = (
     collect_submodules("customtkinter")
     + collect_submodules("vosk")
@@ -21,7 +22,7 @@ a = Analysis(
         str(project / "app" / "ui"),
         str(project / "app" / "backend"),
     ],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],

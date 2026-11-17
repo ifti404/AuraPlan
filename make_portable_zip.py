@@ -11,7 +11,11 @@ def main() -> int:
     with ZipFile(destination, "w", compression=ZIP_DEFLATED, compresslevel=6) as archive:
         for path in source.rglob("*"):
             if path.is_file():
-                archive.write(path, path.relative_to(source).as_posix())
+                relative = path.relative_to(source)
+                # Keep local tasks and profiles out of distributable builds.
+                if relative.parts[0].casefold() == "data":
+                    continue
+                archive.write(path, relative.as_posix())
     print(f"Created portable archive: {destination}")
     return 0
 
