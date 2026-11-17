@@ -1,7 +1,7 @@
 """Validated CRUD interface for academic tasks; scheduling stays elsewhere."""
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any, Mapping
 
 from database import DEFAULT_DB_PATH, connection, initialize_database
@@ -125,7 +125,8 @@ class TaskRepository:
         data = _validate(changes)
         if not data:
             return self.get_task(task_id)
-        data["updated_at"] = datetime.now().astimezone().isoformat()
+        # Same UTC format as the schema's created_at default, so both columns agree.
+        data["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
         assignments = ", ".join(f"{field} = ?" for field in data)
         with connection(self.db_path) as conn:
             cur = conn.execute(f"UPDATE tasks SET {assignments} WHERE id = ?",

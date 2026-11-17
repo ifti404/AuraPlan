@@ -76,7 +76,16 @@ class TaskForm:
         if task and task.description:
             self.description.insert("1.0", task.description)
 
-        self.load_choice = tk.StringVar(value="Automatic")
+        # When editing, keep a load level the user set by hand: show "Automatic" only
+        # if the saved level is what the classifier would suggest for the saved task.
+        initial_choice = "Automatic"
+        if task and task.load_level:
+            suggested = classify_task_detail(task.title, task.description or "",
+                                             estimated_minutes=task.estimated_minutes,
+                                             default="medium")["level"]
+            if task.load_level != suggested:
+                initial_choice = task.load_level.title()
+        self.load_choice = tk.StringVar(value=initial_choice)
         load_panel = frame(content, fg_color=COLORS["surface_alt"])
         load_panel.pack(fill="x", pady=(12, 0))
         load_header = frame(load_panel, fg_color="transparent")
@@ -411,9 +420,13 @@ class TaskForm:
             if not 1 <= hour_12 <= 12 or not 0 <= minute <= 59:
                 raise ValueError
             hour_24 = hour_12 % 12 + (12 if self.ampm_var.get() == "PM" else 0)
-            deadline = datetime.strptime(
-                f"{deadline_input} {hour_24:02d}:{minute:02d}", "%Y-%m-%d %H:%M"
-            ).replace(tzinfo=self.deadline_timezone).isoformat()
+            naive_deadline = datetime.strptime(
+                f"{deadline_input} {hour_24:02d}:{minute:02d}", "%Y-%m-%d %H:%M")
+            # Keep an edited task's original offset; give new tasks the local offset
+            # for that date, so every stored deadline carries a timezone.
+            deadline = (naive_deadline.replace(tzinfo=self.deadline_timezone)
+                        if self.deadline_timezone is not None
+                        else naive_deadline.astimezone()).isoformat()
         except ValueError:
             self.error.configure(text="Choose a date and a valid time using the clock picker.")
             return

@@ -221,3 +221,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local AuraPlan data (personal tasks and profiles)
+*.sqlite3
+*.sqlite3-journal
+profiles.json
+/profiles/
+/data/
