@@ -10,8 +10,8 @@ from __future__ import annotations
 from datetime import datetime, time, timedelta
 from typing import Any, Mapping, Sequence
 
-from priority_engine import (_datetime, explain_priority, is_active, priority_score,
-                             task_load, task_minutes)
+from priority_engine import (_datetime, explain_priority, hours_until, is_active,
+                             priority_score, task_load, task_minutes)
 
 DEFAULT_MAX_SESSION = 90   # minutes; long tasks are split into sessions this size
 
@@ -117,7 +117,9 @@ def plan_week(tasks, *, daily_minutes=180, days: int = 7, energy=3, now=None,
         dd = deadline_day[id(task)]
         info = {"id": _get(task, "id"), "title": _get(task, "title", ""),
                 "deadline": _get(task, "deadline"), "short_minutes": short}
-        if dd is not None and dd < now.date():
+        hours_left = hours_until(_get(task, "deadline"), now)
+        # Overdue means the deadline moment has passed, even if it was earlier today.
+        if dd is not None and (dd < now.date() or (hours_left is not None and hours_left < 0)):
             info["reason"] = "already overdue and doesn't fit the plan"
             late.append(info)
         elif dd is not None and dd < now.date() + timedelta(days=days):

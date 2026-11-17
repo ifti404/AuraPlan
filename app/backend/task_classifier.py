@@ -28,15 +28,45 @@ LONG_TASK_MINUTES = 90
 _WORD = re.compile(r"[\w]+(?:['’-][\w]+)*", re.UNICODE)
 
 
+def _phrase(text: str) -> str:
+    return " ".join(_WORD.findall(text.casefold()))
+
+
+def _pattern(phrase: str) -> str:
+    """Regex for a phrase that tolerates simple plurals (essay/essays, study/studies)."""
+    if len(phrase) > 1 and phrase.endswith("y") and phrase[-2] not in "aeiou":
+        return re.escape(phrase[:-1]) + r"(?:y|ies)"
+    return re.escape(phrase) + r"(?:e?s)?"
+
+
 def _matches(text: str, keywords: Iterable[str]) -> set[str]:
-    """Whole-word/phrase matches; a plural ``s`` is tolerated (essay/essays)."""
-    normalized = " ".join(_WORD.findall(text.casefold()))
+    """Whole-word/phrase matches; simple plurals are tolerated."""
+    normalized = _phrase(text)
     found = set()
     for keyword in keywords:
-        phrase = " ".join(_WORD.findall(keyword.casefold()))
-        if phrase and re.search(rf"(?<!\w){re.escape(phrase)}(?:e?s)?(?!\w)", normalized):
+        phrase = _phrase(keyword)
+        if phrase and re.search(rf"(?<!\w){_pattern(phrase)}(?!\w)", normalized):
             found.add(keyword)
     return found
+
+
+def _found(text: str, groups: dict) -> dict:
+    """Matches per level, dropping a keyword that is only part of a longer matched
+    phrase (so "study guide" is not also counted as "study")."""
+    found = {level: _matches(text, words) for level, words in groups.items()}
+    phrases = {kw: _phrase(kw) for matched in found.values() for kw in matched}
+    for matched in found.values():
+        for kw in list(matched):
+            inner = f" {phrases[kw]} "
+            if any(other != kw and phrases[other] != phrases[kw] and inner in f" {phrases[other]} "
+                   for other in phrases):
+                matched.discard(kw)
+    return found
+
+
+def _leads(normalized_title: str, keywords) -> bool:
+    """True when the title starts with one of the keywords (usually its action verb)."""
+    return any(re.match(rf"{_pattern(_phrase(kw))}(?!\w)", normalized_title) for kw in keywords)
 
 
 def classify_task_detail(title: str, description: str = "", *, estimated_minutes=None,
@@ -50,13 +80,21 @@ def classify_task_detail(title: str, description: str = "", *, estimated_minutes
         raise ValueError("default must be 'high', 'medium', or 'low'")
     high_set = HIGH_LOAD_KEYWORDS | frozenset(high_keywords or ())
     low_set = LOW_LOAD_KEYWORDS | frozenset(low_keywords or ())
-    t_high, t_low = _matches(title or "", high_set), _matches(title or "", low_set)
-    d_high, d_low = _matches(description or "", high_set), _matches(description or "", low_set)
-    high_w = 2 * len(t_high) + len(d_high - t_high)
-    low_w = 2 * len(t_low) + len(d_low - t_low)
-    t_medium = _matches(title or "", MEDIUM_LOAD_KEYWORDS)
-    d_medium = _matches(description or "", MEDIUM_LOAD_KEYWORDS)
-    medium_w = 2 * len(t_medium) + len(d_medium - t_medium)
+    groups = {"high": high_set, "medium": MEDIUM_LOAD_KEYWORDS, "low": low_set}
+    title_found = _found(title or "", groups)
+    desc_found = _found(description or "", groups)
+    title_norm = _phrase(title or "")
+
+    def weight(level):
+        # Title evidence counts double. A light administrative verb that opens the
+        # title is the real action ("Submit assignment", "Email TA about homework"),
+        # so it counts extra against the nouns that follow it.
+        lead = 2 if level == "low" and _leads(title_norm, title_found[level]) else 0
+        return 2 * len(title_found[level]) + len(desc_found[level] - title_found[level]) + lead
+
+    t_high, t_medium, t_low = title_found["high"], title_found["medium"], title_found["low"]
+    d_high, d_medium, d_low = desc_found["high"], desc_found["medium"], desc_found["low"]
+    high_w, medium_w, low_w = weight("high"), weight("medium"), weight("low")
 
     if high_w and high_w >= medium_w and high_w >= low_w - 1:
         found = sorted(t_high | d_high)

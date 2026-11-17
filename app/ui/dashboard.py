@@ -121,8 +121,10 @@ class Dashboard:
         tasks = self.repo.list_tasks()
         pending = [t for t in tasks if t.status not in {"completed", "cancelled"}]
         completed = [t for t in tasks if t.status == "completed"]
-        if not self.minutes.get().isdigit():
+        if not self.minutes.get().strip().isdigit():
             self.minutes.set("180")
+        else:
+            self.minutes.set(self.minutes.get().strip())
         energy = {"Low": 1, "Medium": 3, "High": 5}.get(self.energy.get(), 3)
         try:
             daily_plan = generate_schedule(pending, available_minutes=int(self.minutes.get()), energy=energy)
@@ -140,6 +142,13 @@ class Dashboard:
             self._render_tasks(tasks)
         else:
             self._render_week(week_plan)
+        if show_risk_popup and self.deadline_risks:
+            shown = "\n".join(f"{category}: {item['title']} — {item['reason']}"
+                              for category, item in self.deadline_risks[:6])
+            more = len(self.deadline_risks) - 6
+            if more > 0:
+                shown += f"\n…and {more} more"
+            messagebox.showwarning("Deadline risks", shown, parent=self.parent)
 
     def schedule_refresh(self, show_risk_popup=False):
         """Redraw after CustomTkinter's delayed click/focus callbacks finish."""
@@ -179,7 +188,7 @@ class Dashboard:
                 justify="left").pack(anchor="w", padx=14, pady=(0, 10))
         stats = frame(self.body, fg_color="transparent")
         stats.pack(fill="x", pady=(0, 16))
-        deadlines = sorted((t for t in pending if t.deadline), key=lambda t: t.deadline)
+        deadlines = sorted((t for t in pending if t.deadline), key=self._deadline_key)
         values = (("OPEN TASKS", str(len(pending))), ("COMPLETED", str(len(completed))),
                   ("NEXT DEADLINE", self._format_due(deadlines[0].deadline) if deadlines else "None"))
         for heading, value in values:
@@ -403,6 +412,15 @@ class Dashboard:
     def _greeting():
         hour = datetime.now().hour
         return "Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening"
+
+    @staticmethod
+    def _deadline_key(task):
+        """Sort by the real moment, not the text, so mixed UTC offsets order correctly."""
+        try:
+            moment = datetime.fromisoformat(task.deadline.replace("Z", "+00:00"))
+            return moment.astimezone().timestamp()   # naive values are read as local time
+        except (ValueError, AttributeError, OverflowError, OSError):
+            return float("inf")
 
     @staticmethod
     def _format_due(value):

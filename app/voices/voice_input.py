@@ -89,6 +89,7 @@ class VoiceInput:
         stream = None
         recognizer = KaldiRecognizer(self.model, float(self.sample_rate))
         started_at = time.monotonic()
+        phrases: list[str] = []
         try:
             try:
                 stream = audio.open(
@@ -114,19 +115,22 @@ class VoiceInput:
                     text = json.loads(recognizer.Result()).get("text", "").strip()
                     if text:
                         print(f"[VoiceInput] Recognized: {text}")
-                        continue
+                        phrases.append(text)
 
             # Preserve speech that did not yet trigger Vosk's endpoint detector.
             text = json.loads(recognizer.FinalResult()).get("text", "").strip()
             if text:
                 print(f"[VoiceInput] Recognized: {text}")
+                phrases.append(text)
             else:
                 print("[VoiceInput] No speech recognized.")
-            return text
+            return " ".join(phrases)
         except KeyboardInterrupt:
             text = json.loads(recognizer.FinalResult()).get("text", "").strip()
+            if text:
+                phrases.append(text)
             print(f"\n[VoiceInput] Recognized: {text}" if text else "\n[VoiceInput] Listening stopped.")
-            return text
+            return " ".join(phrases)
         finally:
             if stream is not None:
                 try:
