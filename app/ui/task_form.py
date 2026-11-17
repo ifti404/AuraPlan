@@ -34,7 +34,8 @@ class TaskForm:
 
         self.title_var = tk.StringVar(value=task.title if task else initial_title)
         try:
-            existing_deadline = datetime.fromisoformat(task.deadline) if task and task.deadline else None
+            existing_deadline = (datetime.fromisoformat(task.deadline.replace("Z", "+00:00"))
+                                 if task and task.deadline else None)
         except ValueError:
             existing_deadline = None
         self.deadline_timezone = existing_deadline.tzinfo if existing_deadline else None
