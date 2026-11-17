@@ -85,8 +85,10 @@ def initialize_database(db_path=DEFAULT_DB_PATH) -> None:
                 conn.execute(f"INSERT INTO tasks ({quoted}) SELECT {quoted} "
                              "FROM tasks_before_load_migration")
                 conn.execute("DROP TABLE tasks_before_load_migration")
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_deadline ON tasks(deadline)")
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
+                # Renaming the legacy table also renames its indexes. Drop the
+                # old table first, then recreate the indexes on the new table.
+                conn.execute("CREATE INDEX idx_tasks_deadline ON tasks(deadline)")
+                conn.execute("CREATE INDEX idx_tasks_status ON tasks(status)")
                 conn.commit()
             except Exception:
                 conn.rollback()
