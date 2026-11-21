@@ -218,3 +218,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# AuraPlan local files
+*.zip
+*.sqlite3
+*.db
+run_log.txt
+

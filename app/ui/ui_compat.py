@@ -2,33 +2,55 @@
 import sys
 from pathlib import Path
 
-LIGHT_COLORS = {
-    "forest": "#253D2C",
-    "primary": "#2E6F40",
-    "mint": "#CFFFDC",
-    "leaf": "#68BA7F",
-    "background": "#F3F8F4",
-    "surface": "#FFFFFF",
-    "surface_alt": "#EAF3EC",
-    "text": "#253D2C",
-    "muted": "#607766",
-    "border": "#D6E5D9",
-    "danger": "#A34242",
-    "danger_surface": "#F8E8E6",
-    "warning": "#8B621C",
+
+
+
+
+LIGHT_COLORS ={
+    # Brand colors
+    "forest": "#2B0645",
+    "primary": "#6500B5",
+    "mint": "#F0D8FF",
+    "leaf": "#E4B8FF",
+
+    # Eye-catching purple background
+    "background": "#A45BE8",
+    "surface": "#C18AF2",
+    "surface_alt": "#D0A8F5",
+
+    # High contrast typography
+    "text": "#241038",
+    "muted": "#4A2864",
+
+    # Borders
+    "border": "#7B3DB3",
+
+    # Status colors
+    "danger": "#B51F55",
+    "danger_surface": "#F2B8D2",
+    "warning": "#714000",
 }
+
+
+
+
 DARK_COLORS = {
     **LIGHT_COLORS,
-    "background": "#111914",
-    "surface": "#1B2720",
-    "surface_alt": "#24352A",
-    "text": "#ECF5EE",
-    "muted": "#B5C7B8",
-    "border": "#3B5141",
-    "danger": "#F19A91",
-    "danger_surface": "#422D2C",
-    "warning": "#EAC97E",
+    "forest": "#17172B",
+    "primary": "#9188F0",
+    "mint": "#302D4B",
+    "leaf": "#A69FF5",
+    "background": "#171725",
+    "surface": "#222235",
+    "surface_alt": "#2C2B43",
+    "text": "#F2F0FF",
+    "muted": "#B5B1CE",
+    "border": "#3C3957",
+    "danger": "#F08B9A",
+    "danger_surface": "#422B39",
+    "warning": "#EAC77D",
 }
+
 THEME_MODE = "light"
 COLORS = dict(LIGHT_COLORS)
 FONT_FAMILY = "Aptos"
@@ -165,6 +187,7 @@ def textbox(master, **kw):
     return tk.Text(master, **kw)
 
 
+
 def option_menu(master, values, variable, command=None, **kw):
     if CUSTOM:
         kw.setdefault("fg_color", COLORS["primary"])
@@ -175,9 +198,11 @@ def option_menu(master, values, variable, command=None, **kw):
         kw.setdefault("dropdown_hover_color", COLORS["surface_alt"])
         kw.setdefault("dropdown_text_color", COLORS["text"])
         return ctk.CTkOptionMenu(master, values=values, variable=variable, command=command, **kw)
+
     for key in ("height", "fg_color", "button_color", "button_hover_color", "text_color",
                 "dropdown_fg_color", "dropdown_hover_color", "dropdown_text_color"):
         kw.pop(key, None)
+
     return ttk.Combobox(master, values=values, textvariable=variable, state="readonly", **kw)
 
 

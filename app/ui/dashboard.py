@@ -365,44 +365,126 @@ class Dashboard:
                 label(day_card, "No study blocks planned", font=(FONT_FAMILY, 12),
                       text_color=COLORS["muted"]).pack(anchor="w", padx=16, pady=(0, 10))
 
+    
     def _task_card(self, parent, task, number, note="", minutes=None):
-        card = frame(parent, fg_color=COLORS["surface_alt"])
-        card.pack(fill="x", padx=5, pady=5)
-        row = frame(card, fg_color="transparent")
-        row.pack(fill="x", padx=13, pady=(10, 3))
-        label(row, f"{number:02d}", font=(FONT_FAMILY, 11, "bold"), text_color=COLORS["muted"]).pack(side="left")
-        label(row, task.title, font=(FONT_FAMILY, 14, "bold"), wraplength=560,
-              justify="left").pack(side="left", padx=10, fill="x", expand=True)
         dark_mode = get_theme_mode() == "dark"
+
+        # Priority colors
         load_color = {
             "low": COLORS["leaf"] if dark_mode else COLORS["primary"],
             "medium": COLORS["warning"],
             "high": COLORS["mint"] if dark_mode else COLORS["forest"],
         }.get(task.load_level.casefold(), COLORS["muted"])
-        meta = frame(card, fg_color="transparent")
-        meta.pack(fill="x", padx=38, pady=(0, 3))
-        label(meta, f"{task.load_level.title()} load", font=(FONT_FAMILY, 12, "bold"),
-              text_color=load_color).pack(side="left")
-        label(meta, f"{minutes or task.estimated_minutes} min  ·  Due {self._format_due(task.deadline)}  ·  {task.status.replace('_', ' ').title()}",
-              font=(FONT_FAMILY, 11), text_color=COLORS["muted"]).pack(side="left", padx=(9, 0))
-        if note:
-            label(card, note, font=(FONT_FAMILY, 12), text_color=COLORS["muted"],
-                  wraplength=680, justify="left").pack(anchor="w", padx=38, pady=(2, 5))
-        actions = frame(card, fg_color="transparent")
-        actions.pack(fill="x", padx=37, pady=(2, 9))
-        if task.status not in {"completed", "cancelled"}:
-            button(actions, "Mark complete", lambda t=task: self.complete(t),
-                   width=112, height=28).pack(side="left", padx=(0, 6))
-        button(actions, "Edit", lambda t=task: self.edit_task(t), width=64,
-               height=28).pack(side="left", padx=(0, 6))
-        button(actions, "Delete", lambda t=task: self.delete_task(t), width=70,
-               height=28, fg_color=COLORS["danger_surface"], hover_color=COLORS["danger"],
-               text_color=COLORS["danger"]).pack(side="left")
 
-    @staticmethod
-    def _greeting():
-        hour = datetime.now().hour
-        return "Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening"
+        # Main card
+        card = frame(
+            parent,
+            fg_color=COLORS["surface_alt"],
+            border_color=COLORS["border"],
+            border_width=1,
+            corner_radius=16
+        )
+        card.pack(fill="x", padx=6, pady=7)
+
+        # Priority accent bar
+        accent = frame(
+            card,
+            width=5,
+            fg_color=load_color,
+            corner_radius=4
+        )
+        accent.pack(side="left", fill="y", padx=(0, 0), pady=10)
+
+        content = frame(card, fg_color="transparent")
+        content.pack(side="left", fill="x", expand=True,
+                     padx=14, pady=10)
+
+        # Header row
+        header = frame(content, fg_color="transparent")
+        header.pack(fill="x", pady=(0, 7))
+
+        label(
+            header,
+            f"#{number:02d}",
+            font=(FONT_FAMILY, 11, "bold"),
+            text_color=COLORS["primary"]
+        ).pack(side="left")
+
+        label(
+            header,
+            task.title,
+            font=(FONT_FAMILY, 15, "bold"),
+            wraplength=600,
+            justify="left"
+        ).pack(side="left", padx=12, fill="x", expand=True)
+
+        # Task information
+        meta = frame(content, fg_color="transparent")
+        meta.pack(fill="x", pady=(0, 7))
+
+        label(
+            meta,
+            f"● {task.load_level.title()} Load",
+            font=(FONT_FAMILY, 11, "bold"),
+            text_color=load_color
+        ).pack(side="left")
+
+        label(
+            meta,
+            f"{minutes or task.estimated_minutes} min",
+            font=(FONT_FAMILY, 11, "bold"),
+            text_color=COLORS["muted"]
+        ).pack(side="left", padx=(15, 0))
+
+        label(
+            meta,
+            f"Due: {self._format_due(task.deadline)}",
+            font=(FONT_FAMILY, 11),
+            text_color=COLORS["muted"]
+        ).pack(side="left", padx=(15, 0))
+
+        # Optional planner note
+        if note:
+            label(
+                content,
+                note,
+                font=(FONT_FAMILY, 12),
+                text_color=COLORS["muted"],
+                wraplength=680,
+                justify="left"
+            ).pack(anchor="w", pady=(2, 8))
+
+        # Action buttons
+        actions = frame(content, fg_color="transparent")
+        actions.pack(fill="x", pady=(3, 0))
+
+        if task.status not in {"completed", "cancelled"}:
+            button(
+                actions,
+                "✓ Complete",
+                lambda t=task: self.complete(t),
+                width=112,
+                height=30
+            ).pack(side="left", padx=(0, 7))
+
+        button(
+            actions,
+            "Edit",
+            lambda t=task: self.edit_task(t),
+            width=68,
+            height=30
+        ).pack(side="left", padx=(0, 7))
+
+        button(
+            actions,
+            "Delete",
+            lambda t=task: self.delete_task(t),
+            width=75,
+            height=30,
+            fg_color=COLORS["danger_surface"],
+            hover_color=COLORS["danger"],
+            text_color=COLORS["danger"]
+        ).pack(side="left")
 
     @staticmethod
     def _format_due(value):
